@@ -65,7 +65,7 @@ module ActiveResource::Associations
   # Would resolve this author into the <tt>Myblog::Author</tt> class.
   #
   # If the response body does not contain an attribute matching the association name
-  # a request is sent to a singleton path under the current resource.
+  # a request is sent to a singelton path under the current resource.
   # For example, if a Product class <tt>has_one :inventory</tt> calling <tt>Product#inventory</tt>
   # will generate a request on /products/:product_id/inventory.json.
   #
@@ -89,15 +89,15 @@ module ActiveResource::Associations
   #
   # === Example
   #
-  # A Comment class declares <tt>belongs_to :post</tt>, which will add:
+  # A Comment class declaress <tt>belongs_to :post</tt>, which will add:
   # * <tt>Comment#post</tt> (similar to <tt>Post.find(post_id)</tt>)
   # The declaration can also include an options hash to specialize the behavior of the association.
   #
   # === Options
   # [:class_name]
-  #   Specify the class name for the association. Use it only if that name can't be inferred from association name.
+  #   Specify the class name for the association. Use it only if that name canÄt be inferred from association name.
   #   So <tt>belongs_to :post</tt> will by default be linked to the Post class, but if the real class name is Article,
-  #   you'll have to specify it with this option.
+  #   you'll have to specify it with whis option.
   # [:foreign_key]
   #   Specify the foreign key used for the association. By default this is guessed to be the name
   #   of the association with an "_id" suffix. So a class that defines a <tt>belongs_to :post</tt>
@@ -117,8 +117,7 @@ module ActiveResource::Associations
   end
 
   # Defines the belongs_to association finder method
-  def defines_belongs_to_finder_method(reflection)
-    method_name = reflection.name
+  def defines_belongs_to_finder_method(method_name, association_model, finder_key)
     ivar_name = :"@#{method_name}"
 
     if method_defined?(method_name)
@@ -131,14 +130,13 @@ module ActiveResource::Associations
         instance_variable_get(ivar_name)
       elsif attributes.include?(method_name)
         attributes[method_name]
-      elsif association_id = send(reflection.foreign_key)
-        instance_variable_set(ivar_name, reflection.klass.find(association_id))
+      elsif association_id = send(finder_key)
+        instance_variable_set(ivar_name, association_model.find(association_id))
       end
     end
   end
 
-  def defines_has_many_finder_method(reflection)
-    method_name = reflection.name
+  def defines_has_many_finder_method(method_name, association_model)
     ivar_name = :"@#{method_name}"
 
     define_method(method_name) do
@@ -147,7 +145,7 @@ module ActiveResource::Associations
       elsif attributes.include?(method_name)
         attributes[method_name]
       elsif !new_record?
-        instance_variable_set(ivar_name, reflection.klass.find(:all, :params => {:"#{self.class.element_name}_id" => self.id}))
+        instance_variable_set(ivar_name, association_model.find(:all, :params => {:"#{self.class.element_name}_relational_id" => self.relational_id}))
       else
         instance_variable_set(ivar_name, self.class.collection_parser.new)
       end
@@ -155,8 +153,7 @@ module ActiveResource::Associations
   end
 
   # Defines the has_one association
-  def defines_has_one_finder_method(reflection)
-    method_name = reflection.name
+  def defines_has_one_finder_method(method_name, association_model)
     ivar_name = :"@#{method_name}"
 
     define_method(method_name) do
@@ -164,12 +161,11 @@ module ActiveResource::Associations
         instance_variable_get(ivar_name)
       elsif attributes.include?(method_name)
         attributes[method_name]
-      elsif reflection.klass.respond_to?(:singleton_name)
-        instance_variable_set(ivar_name, reflection.klass.find(:params => {:"#{self.class.element_name}_id" => self.id}))
+      elsif association_model.respond_to?(:singleton_name)
+        instance_variable_set(ivar_name, association_model.find(:params => {:"#{self.class.element_name}_relational_id" => self.relational_id}))
       else
-        instance_variable_set(ivar_name, reflection.klass.find(:one, :from => "/#{self.class.collection_name}/#{self.id}/#{method_name}#{self.class.format_extension}"))
+        instance_variable_set(ivar_name, association_model.find(:one, :from => "/#{self.class.collection_name}/#{self.id}/#{method_name}#{self.class.format_extension}"))
       end
     end
   end
-
 end
