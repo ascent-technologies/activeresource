@@ -147,7 +147,7 @@ module ActiveResource::Associations
       elsif attributes.include?(method_name)
         attributes[method_name]
       elsif !new_record?
-        instance_variable_set(ivar_name, reflection.klass.find(:all, :params => {:"#{self.class.element_name}_id" => self.id}))
+        instance_variable_set(ivar_name, reflection.klass.find(:all, :params => {:"#{self.class.element_name}_relational_id" => self.relational_id}))
       else
         instance_variable_set(ivar_name, self.class.collection_parser.new)
       end
@@ -165,7 +165,7 @@ module ActiveResource::Associations
       elsif attributes.include?(method_name)
         attributes[method_name]
       elsif reflection.klass.respond_to?(:singleton_name)
-        instance_variable_set(ivar_name, reflection.klass.find(:params => {:"#{self.class.element_name}_id" => self.id}))
+        instance_variable_set(ivar_name, reflection.klass.find(:params => {:"#{self.class.element_name}_relational_id" => self.relational_id}))
       else
         instance_variable_set(ivar_name, reflection.klass.find(:one, :from => "/#{self.class.collection_name}/#{self.id}/#{method_name}#{self.class.format_extension}"))
       end
